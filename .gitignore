@@ -1,0 +1,10 @@
+target/
+**/target/
+*.class
+*.jar
+*.war
+.mvn/timing.properties
+.idea/
+*.iml
+.vscode/
+*.log
