@@ -1,0 +1,4 @@
+com\hackacode\hotel\controller\ClienteControllerTest.class
+com\hackacode\hotel\HotelApplicationTests.class
+com\hackacode\hotel\service\ClienteServiceTest.class
+com\hackacode\hotel\AbstractIntegrationTest.class

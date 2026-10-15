@@ -1,0 +1,14 @@
+C:\Users\matia\Downloads\proyectos\hotel\backend\src\main\java\com\hackacode\hotel\model\Persona.java
+C:\Users\matia\Downloads\proyectos\hotel\backend\src\main\java\com\hackacode\hotel\HotelApplication.java
+C:\Users\matia\Downloads\proyectos\hotel\backend\src\main\java\com\hackacode\hotel\exception\ErrorDetails.java
+C:\Users\matia\Downloads\proyectos\hotel\backend\src\main\java\com\hackacode\hotel\controller\ClienteController.java
+C:\Users\matia\Downloads\proyectos\hotel\backend\src\main\java\com\hackacode\hotel\exception\ResourceNotFoundException.java
+C:\Users\matia\Downloads\proyectos\hotel\backend\src\main\java\com\hackacode\hotel\exception\DuplicateResourceException.java
+C:\Users\matia\Downloads\proyectos\hotel\backend\src\main\java\com\hackacode\hotel\exception\BusinessException.java
+C:\Users\matia\Downloads\proyectos\hotel\backend\src\main\java\com\hackacode\hotel\dto\ClienteDTO.java
+C:\Users\matia\Downloads\proyectos\hotel\backend\src\main\java\com\hackacode\hotel\model\Cliente.java
+C:\Users\matia\Downloads\proyectos\hotel\backend\src\main\java\com\hackacode\hotel\exception\GlobalExceptionHandler.java
+C:\Users\matia\Downloads\proyectos\hotel\backend\src\main\java\com\hackacode\hotel\config\ClockConfig.java
+C:\Users\matia\Downloads\proyectos\hotel\backend\src\main\java\com\hackacode\hotel\service\ClienteService.java
+C:\Users\matia\Downloads\proyectos\hotel\backend\src\main\java\com\hackacode\hotel\service\impl\ClienteServiceImpl.java
+C:\Users\matia\Downloads\proyectos\hotel\backend\src\main\java\com\hackacode\hotel\repository\ClienteRepository.java
