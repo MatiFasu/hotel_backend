@@ -24,13 +24,21 @@ public class ClienteController {
 
     @PostMapping
     public ResponseEntity<ClienteDTO> crearCliente(@Valid @RequestBody ClienteDTO clienteDTO) {
-        ClienteDTO nuevoCliente = clienteService.crearCliente(clienteDTO);
-        return new ResponseEntity<>(nuevoCliente, HttpStatus.CREATED);
+        ClienteDTO resultado = clienteService.crearCliente(clienteDTO);
+        if (Boolean.TRUE.equals(resultado.getReactivado())) {
+            return ResponseEntity.ok(resultado);
+        }
+        return new ResponseEntity<>(resultado, HttpStatus.CREATED);
     }
 
     @GetMapping
-    public ResponseEntity<List<ClienteDTO>> obtenerTodos() {
-        return ResponseEntity.ok(clienteService.obtenerTodosLosClientes());
+    public ResponseEntity<List<ClienteDTO>> obtenerTodos(
+            @RequestParam(required = false) Boolean activo,
+            @RequestParam(required = false) String q) {
+        if (activo == null && (q == null || q.isBlank())) {
+            return ResponseEntity.ok(clienteService.obtenerTodosLosClientes());
+        }
+        return ResponseEntity.ok(clienteService.listarClientes(activo, q));
     }
 
     @GetMapping("/{id}")
@@ -52,5 +60,10 @@ public class ClienteController {
     public ResponseEntity<Void> eliminarCliente(@PathVariable Long id) {
         clienteService.eliminarCliente(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PatchMapping("/{id}/reactivar")
+    public ResponseEntity<ClienteDTO> reactivarCliente(@PathVariable Long id) {
+        return ResponseEntity.ok(clienteService.reactivarCliente(id));
     }
 }

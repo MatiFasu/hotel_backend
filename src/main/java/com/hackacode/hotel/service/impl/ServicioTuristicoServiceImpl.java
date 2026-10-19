@@ -58,11 +58,13 @@ public class ServicioTuristicoServiceImpl implements ServicioTuristicoService {
         List<ServicioTuristico> lista;
 
         if (activo == null && tipoServicio == null) {
-            lista = servicioRepository.findByActivoTrue();
+            lista = servicioRepository.findAll();
         } else if (activo != null && tipoServicio == null) {
             lista = servicioRepository.findByActivo(activo);
         } else if (activo == null && tipoServicio != null) {
-            lista = servicioRepository.findByTipoServicioAndActivoTrue(tipoServicio);
+            lista = servicioRepository.findAll().stream()
+                    .filter(s -> s.getTipoServicio() == tipoServicio)
+                    .collect(Collectors.toList());
         } else {
             lista = servicioRepository.findByActivo(activo).stream()
                     .filter(s -> s.getTipoServicio() == tipoServicio)

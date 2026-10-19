@@ -6,8 +6,10 @@ import java.util.List;
 public interface ClienteService {
     ClienteDTO crearCliente(ClienteDTO clienteDTO);
     List<ClienteDTO> obtenerTodosLosClientes();
+    List<ClienteDTO> listarClientes(Boolean activo, String q);
     ClienteDTO obtenerClientePorId(Long id);
     ClienteDTO obtenerClientePorDni(String dni);
     ClienteDTO actualizarCliente(Long id, ClienteDTO clienteDTO);
     void eliminarCliente(Long id);
+    ClienteDTO reactivarCliente(Long id);
 }

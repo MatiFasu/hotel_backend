@@ -1,6 +1,7 @@
 package com.hackacode.hotel.service;
 
 import com.hackacode.hotel.dto.ClienteDTO;
+import com.hackacode.hotel.exception.BusinessException;
 import com.hackacode.hotel.exception.DuplicateResourceException;
 import com.hackacode.hotel.exception.ResourceNotFoundException;
 import com.hackacode.hotel.model.Cliente;
@@ -36,13 +37,14 @@ class ClienteServiceTest {
 
     @BeforeEach
     void setUp() {
-        cliente = new Cliente(1L, "Juan", "Perez", "Av. Siempreviva 123", "12345678", LocalDate.of(1990, 5, 15), "Argentina", "1122334455", "juan@example.com");
+        cliente = new Cliente(1L, "Juan", "Perez", "Av. Siempreviva 123", "12345678", LocalDate.of(1990, 5, 15), "Argentina", "1122334455", "juan@example.com", true);
         clienteDTO = new ClienteDTO(1L, "Juan", "Perez", "Av. Siempreviva 123", "12345678", LocalDate.of(1990, 5, 15), "Argentina", "1122334455", "juan@example.com");
     }
 
     @Test
     @DisplayName("Crear cliente exitoso - Caso Feliz")
     void testCrearClienteExitoso() {
+        when(clienteRepository.findByDni("12345678")).thenReturn(Optional.empty());
         when(clienteRepository.existsByDni("12345678")).thenReturn(false);
         when(clienteRepository.save(any(Cliente.class))).thenReturn(cliente);
 
@@ -51,19 +53,37 @@ class ClienteServiceTest {
         assertNotNull(resultado);
         assertEquals("Juan", resultado.getNombre());
         assertEquals("12345678", resultado.getDni());
+        assertFalse(resultado.getReactivado());
         verify(clienteRepository, times(1)).save(any(Cliente.class));
     }
 
     @Test
-    @DisplayName("Crear cliente con DNI duplicado - Caso Límite / Excepción")
+    @DisplayName("Crear cliente con DNI activo duplicado lanza DuplicateResourceException (409)")
     void testCrearClienteDniDuplicado() {
-        when(clienteRepository.existsByDni("12345678")).thenReturn(true);
+        when(clienteRepository.findByDni("12345678")).thenReturn(Optional.of(cliente));
 
         assertThrows(DuplicateResourceException.class, () -> {
             clienteService.crearCliente(clienteDTO);
         });
 
         verify(clienteRepository, never()).save(any(Cliente.class));
+    }
+
+    @Test
+    @DisplayName("Crear cliente con DNI inactivo existente lo reactiva (reactivado = true)")
+    void testReactivarClientePorDniInactivo() {
+        cliente.setActivo(false);
+        when(clienteRepository.findByDni("12345678")).thenReturn(Optional.of(cliente));
+        when(clienteRepository.save(any(Cliente.class))).thenAnswer(inv -> inv.getArgument(0));
+
+        clienteDTO.setDireccion("Nueva Direccion 456");
+        ClienteDTO resultado = clienteService.crearCliente(clienteDTO);
+
+        assertNotNull(resultado);
+        assertTrue(resultado.getActivo());
+        assertTrue(resultado.getReactivado());
+        assertEquals("Nueva Direccion 456", resultado.getDireccion());
+        verify(clienteRepository, times(1)).save(cliente);
     }
 
     @Test
@@ -100,13 +120,27 @@ class ClienteServiceTest {
     }
 
     @Test
-    @DisplayName("Eliminar cliente existente")
+    @DisplayName("Eliminar cliente realiza baja lógica (activo = false)")
     void testEliminarClienteExitoso() {
         when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
-        doNothing().when(clienteRepository).delete(cliente);
+        when(clienteRepository.save(any(Cliente.class))).thenReturn(cliente);
 
         clienteService.eliminarCliente(1L);
 
-        verify(clienteRepository, times(1)).delete(cliente);
+        assertFalse(cliente.getActivo());
+        verify(clienteRepository, times(1)).save(cliente);
+    }
+
+    @Test
+    @DisplayName("Actualizar cliente inactivo lanza BusinessException (422)")
+    void testActualizarClienteInactivoLanzaExcepcion() {
+        cliente.setActivo(false);
+        when(clienteRepository.findById(1L)).thenReturn(Optional.of(cliente));
+
+        assertThrows(BusinessException.class, () -> {
+            clienteService.actualizarCliente(1L, clienteDTO);
+        });
+
+        verify(clienteRepository, never()).save(any(Cliente.class));
     }
 }

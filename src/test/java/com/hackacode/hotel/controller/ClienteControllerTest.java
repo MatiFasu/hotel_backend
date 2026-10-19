@@ -40,7 +40,7 @@ class ClienteControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /api/clientes - Crear cliente con datos válidos")
+    @DisplayName("POST /api/clientes - Crear cliente con datos válidos responde 201 Created")
     void testCrearClienteHTTP() throws Exception {
         ClienteDTO dto = new ClienteDTO(null, "Maria", "Gomez", "Calle Falsa 123", "87654321", LocalDate.of(1995, 10, 20), "Argentina", "1199887766", "maria@example.com");
 
@@ -50,7 +50,40 @@ class ClienteControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.idCliente", notNullValue()))
                 .andExpect(jsonPath("$.nombre", is("Maria")))
-                .andExpect(jsonPath("$.dni", is("87654321")));
+                .andExpect(jsonPath("$.dni", is("87654321")))
+                .andExpect(jsonPath("$.activo", is(true)))
+                .andExpect(jsonPath("$.reactivado", is(false)));
+    }
+
+    @Test
+    @DisplayName("POST /api/clientes - DNI repetido inactivo reactiva y responde 200 OK")
+    void testReactivarClientePorDniHTTP() throws Exception {
+        Cliente inactivo = new Cliente(null, "Pedro", "Gomez", "Calle 1", "33445566", LocalDate.of(1992, 4, 10), "Argentina", "1144556677", "pedro@example.com", false);
+        clienteRepository.save(inactivo);
+
+        ClienteDTO dto = new ClienteDTO(null, "Pedro Actualizado", "Gomez", "Calle Nueva 999", "33445566", LocalDate.of(1992, 4, 10), "Argentina", "1144556677", "pedro@example.com");
+
+        mockMvc.perform(post("/api/clientes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre", is("Pedro Actualizado")))
+                .andExpect(jsonPath("$.activo", is(true)))
+                .andExpect(jsonPath("$.reactivado", is(true)));
+    }
+
+    @Test
+    @DisplayName("POST /api/clientes - DNI repetido activo responde 409 Conflict")
+    void testCrearClienteDniActivoConflictoHTTP() throws Exception {
+        Cliente activo = new Cliente(null, "Pedro", "Gomez", "Calle 1", "33445566", LocalDate.of(1992, 4, 10), "Argentina", "1144556677", "pedro@example.com", true);
+        clienteRepository.save(activo);
+
+        ClienteDTO dto = new ClienteDTO(null, "Otro", "Gomez", "Calle 2", "33445566", LocalDate.of(1992, 4, 10), "Argentina", "1144556677", "otro@example.com");
+
+        mockMvc.perform(post("/api/clientes")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(dto)))
+                .andExpect(status().isConflict());
     }
 
     @Test
