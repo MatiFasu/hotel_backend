@@ -34,10 +34,14 @@ class EmpleadoControllerTest extends AbstractIntegrationTest {
     private EmpleadoRepository empleadoRepository;
 
     @Autowired
+    private com.hackacode.hotel.repository.VentaRepository ventaRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
+        ventaRepository.deleteAll();
         empleadoRepository.deleteAll();
     }
 

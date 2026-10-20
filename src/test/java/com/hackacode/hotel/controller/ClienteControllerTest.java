@@ -32,10 +32,14 @@ class ClienteControllerTest extends AbstractIntegrationTest {
     private ClienteRepository clienteRepository;
 
     @Autowired
+    private com.hackacode.hotel.repository.VentaRepository ventaRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
+        ventaRepository.deleteAll();
         clienteRepository.deleteAll();
     }
 

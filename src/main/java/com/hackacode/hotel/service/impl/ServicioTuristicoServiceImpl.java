@@ -8,6 +8,7 @@ import com.hackacode.hotel.model.ServicioTuristico;
 import com.hackacode.hotel.model.TipoServicio;
 import com.hackacode.hotel.repository.PaqueteTuristicoRepository;
 import com.hackacode.hotel.repository.ServicioTuristicoRepository;
+import com.hackacode.hotel.repository.VentaRepository;
 import com.hackacode.hotel.service.ServicioTuristicoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -23,19 +25,29 @@ public class ServicioTuristicoServiceImpl implements ServicioTuristicoService {
 
     private final ServicioTuristicoRepository servicioRepository;
     private final PaqueteTuristicoRepository paqueteRepository;
+    private final VentaRepository ventaRepository;
     private final Clock clock;
 
     public ServicioTuristicoServiceImpl(ServicioTuristicoRepository servicioRepository, Clock clock) {
-        this(servicioRepository, null, clock);
+        this(servicioRepository, null, null, clock);
+    }
+
+    public ServicioTuristicoServiceImpl(
+            ServicioTuristicoRepository servicioRepository,
+            PaqueteTuristicoRepository paqueteRepository,
+            Clock clock) {
+        this(servicioRepository, paqueteRepository, null, clock);
     }
 
     @Autowired
     public ServicioTuristicoServiceImpl(
             ServicioTuristicoRepository servicioRepository,
             PaqueteTuristicoRepository paqueteRepository,
+            VentaRepository ventaRepository,
             Clock clock) {
         this.servicioRepository = servicioRepository;
         this.paqueteRepository = paqueteRepository;
+        this.ventaRepository = ventaRepository;
         this.clock = clock;
     }
 
@@ -100,6 +112,18 @@ public class ServicioTuristicoServiceImpl implements ServicioTuristicoService {
 
         if (!Boolean.TRUE.equals(servicio.getActivo())) {
             throw new BusinessException("No se puede modificar un servicio turístico inactivo. Debe reactivarlo previamente.");
+        }
+
+        // Decisión 14: Protección de integridad de itinerario en servicios vendidos
+        if (ventaRepository != null && ventaRepository.existsVentaAsociadaAServicio(codigo)) {
+            boolean cambioItinerario = !Objects.equals(servicio.getFechaServicio(), requestDTO.getFechaServicio())
+                    || !Objects.equals(servicio.getDestinoServicio(), requestDTO.getDestinoServicio())
+                    || !Objects.equals(servicio.getTipoServicio(), requestDTO.getTipoServicio());
+            if (cambioItinerario) {
+                throw new BusinessException(
+                        "No se puede modificar el itinerario (fecha, destino o tipo) de un servicio que ya registra ventas asociadas."
+                );
+            }
         }
 
         servicio.setNombre(requestDTO.getNombre());

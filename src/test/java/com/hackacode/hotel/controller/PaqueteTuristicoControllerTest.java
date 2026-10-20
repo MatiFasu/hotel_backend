@@ -40,6 +40,9 @@ class PaqueteTuristicoControllerTest extends AbstractIntegrationTest {
     private ServicioTuristicoRepository servicioRepository;
 
     @Autowired
+    private com.hackacode.hotel.repository.VentaRepository ventaRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     private ServicioTuristico s1;
@@ -47,6 +50,7 @@ class PaqueteTuristicoControllerTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        ventaRepository.deleteAll();
         paqueteRepository.deleteAll();
         servicioRepository.deleteAll();
 

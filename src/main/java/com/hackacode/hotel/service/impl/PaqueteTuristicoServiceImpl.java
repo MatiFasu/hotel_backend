@@ -9,6 +9,7 @@ import com.hackacode.hotel.model.PaqueteTuristico;
 import com.hackacode.hotel.model.ServicioTuristico;
 import com.hackacode.hotel.repository.PaqueteTuristicoRepository;
 import com.hackacode.hotel.repository.ServicioTuristicoRepository;
+import com.hackacode.hotel.repository.VentaRepository;
 import com.hackacode.hotel.service.PaqueteTuristicoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -25,13 +26,22 @@ public class PaqueteTuristicoServiceImpl implements PaqueteTuristicoService {
 
     private final PaqueteTuristicoRepository paqueteRepository;
     private final ServicioTuristicoRepository servicioRepository;
+    private final VentaRepository ventaRepository;
+
+    public PaqueteTuristicoServiceImpl(
+            PaqueteTuristicoRepository paqueteRepository,
+            ServicioTuristicoRepository servicioRepository) {
+        this(paqueteRepository, servicioRepository, null);
+    }
 
     @Autowired
     public PaqueteTuristicoServiceImpl(
             PaqueteTuristicoRepository paqueteRepository,
-            ServicioTuristicoRepository servicioRepository) {
+            ServicioTuristicoRepository servicioRepository,
+            VentaRepository ventaRepository) {
         this.paqueteRepository = paqueteRepository;
         this.servicioRepository = servicioRepository;
+        this.ventaRepository = ventaRepository;
     }
 
     @Override
@@ -80,6 +90,21 @@ public class PaqueteTuristicoServiceImpl implements PaqueteTuristicoService {
 
         if (!Boolean.TRUE.equals(paquete.getActivo())) {
             throw new BusinessException("No se puede modificar un paquete turístico inactivo. Debe reactivarlo previamente.");
+        }
+
+        // Decisión 5: Inmutabilidad de composición en paquetes con ventas asociadas (incluye ANULADAS)
+        if (ventaRepository != null && ventaRepository.countByPaquete_CodigoPaquete(codigo) > 0) {
+            Set<Long> actuales = paquete.getListaServicios().stream()
+                    .map(ServicioTuristico::getCodigoServicio)
+                    .collect(Collectors.toSet());
+            Set<Long> nuevos = requestDTO.getServicioIds() != null
+                    ? new HashSet<>(requestDTO.getServicioIds())
+                    : Set.of();
+            if (!actuales.equals(nuevos)) {
+                throw new BusinessException(
+                        "No se pueden modificar los servicios de un paquete turístico que ya registra ventas asociadas. Solo se permite cambiar su nombre."
+                );
+            }
         }
 
         List<ServicioTuristico> servicios = validarYObtenerServiciosParaPaquete(requestDTO.getServicioIds());
@@ -170,11 +195,17 @@ public class PaqueteTuristicoServiceImpl implements PaqueteTuristicoService {
                 ))
                 .collect(Collectors.toList());
 
+        long ventasCount = (ventaRepository != null && entity.getCodigoPaquete() != null)
+                ? ventaRepository.countByPaquete_CodigoPaquete(entity.getCodigoPaquete())
+                : 0L;
+
         return new PaqueteTuristicoResponseDTO(
                 entity.getCodigoPaquete(),
                 entity.getNombre(),
                 entity.calcularCostoPaquete(),
                 entity.getActivo(),
+                ventasCount,
+                ventasCount == 0L,
                 serviciosDTO
         );
     }
