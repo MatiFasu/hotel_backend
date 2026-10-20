@@ -6,13 +6,13 @@ import com.hackacode.hotel.exception.BusinessException;
 import com.hackacode.hotel.exception.ResourceNotFoundException;
 import com.hackacode.hotel.model.ServicioTuristico;
 import com.hackacode.hotel.model.TipoServicio;
+import com.hackacode.hotel.repository.PaqueteTuristicoRepository;
 import com.hackacode.hotel.repository.ServicioTuristicoRepository;
 import com.hackacode.hotel.service.impl.ServicioTuristicoServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -21,7 +21,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -34,6 +33,9 @@ class ServicioTuristicoServiceTest {
     @Mock
     private ServicioTuristicoRepository servicioRepository;
 
+    @Mock
+    private PaqueteTuristicoRepository paqueteRepository;
+
     private Clock fixedClock;
     private ServicioTuristicoServiceImpl servicioService;
 
@@ -44,7 +46,7 @@ class ServicioTuristicoServiceTest {
     void setUp() {
         // Fijar reloj en 2026-10-15
         fixedClock = Clock.fixed(Instant.parse("2026-10-15T12:00:00Z"), ZoneId.of("America/Argentina/Buenos_Aires"));
-        servicioService = new ServicioTuristicoServiceImpl(servicioRepository, fixedClock);
+        servicioService = new ServicioTuristicoServiceImpl(servicioRepository, paqueteRepository, fixedClock);
 
         servicio = new ServicioTuristico(
                 1L,
@@ -119,12 +121,28 @@ class ServicioTuristicoServiceTest {
     @DisplayName("Eliminar servicio realiza baja lógica (activo = false)")
     void testEliminarServicioBajaLogica() {
         when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicio));
+        when(paqueteRepository.existsPaqueteActivoConServicio(1L)).thenReturn(false);
         when(servicioRepository.save(any(ServicioTuristico.class))).thenReturn(servicio);
 
         servicioService.eliminarServicio(1L);
 
         assertFalse(servicio.getActivo());
         verify(servicioRepository, times(1)).save(servicio);
+    }
+
+    @Test
+    @DisplayName("Eliminar servicio que integra un paquete activo lanza BusinessException (Decisión 6)")
+    void testEliminarServicioEnPaqueteActivoBloqueado() {
+        when(servicioRepository.findById(1L)).thenReturn(Optional.of(servicio));
+        when(paqueteRepository.existsPaqueteActivoConServicio(1L)).thenReturn(true);
+
+        BusinessException ex = assertThrows(BusinessException.class, () -> {
+            servicioService.eliminarServicio(1L);
+        });
+
+        assertTrue(ex.getMessage().contains("paquetes turísticos activos"));
+        assertTrue(servicio.getActivo());
+        verify(servicioRepository, never()).save(any(ServicioTuristico.class));
     }
 
     @Test

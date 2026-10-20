@@ -34,10 +34,14 @@ class ServicioTuristicoControllerTest extends AbstractIntegrationTest {
     private ServicioTuristicoRepository servicioRepository;
 
     @Autowired
+    private com.hackacode.hotel.repository.PaqueteTuristicoRepository paqueteRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     @BeforeEach
     void setUp() {
+        paqueteRepository.deleteAll();
         servicioRepository.deleteAll();
     }
 

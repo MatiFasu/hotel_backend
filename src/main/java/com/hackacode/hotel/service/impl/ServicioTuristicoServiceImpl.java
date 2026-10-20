@@ -6,6 +6,7 @@ import com.hackacode.hotel.exception.BusinessException;
 import com.hackacode.hotel.exception.ResourceNotFoundException;
 import com.hackacode.hotel.model.ServicioTuristico;
 import com.hackacode.hotel.model.TipoServicio;
+import com.hackacode.hotel.repository.PaqueteTuristicoRepository;
 import com.hackacode.hotel.repository.ServicioTuristicoRepository;
 import com.hackacode.hotel.service.ServicioTuristicoService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,11 +22,20 @@ import java.util.stream.Collectors;
 public class ServicioTuristicoServiceImpl implements ServicioTuristicoService {
 
     private final ServicioTuristicoRepository servicioRepository;
+    private final PaqueteTuristicoRepository paqueteRepository;
     private final Clock clock;
 
-    @Autowired
     public ServicioTuristicoServiceImpl(ServicioTuristicoRepository servicioRepository, Clock clock) {
+        this(servicioRepository, null, clock);
+    }
+
+    @Autowired
+    public ServicioTuristicoServiceImpl(
+            ServicioTuristicoRepository servicioRepository,
+            PaqueteTuristicoRepository paqueteRepository,
+            Clock clock) {
         this.servicioRepository = servicioRepository;
+        this.paqueteRepository = paqueteRepository;
         this.clock = clock;
     }
 
@@ -88,6 +98,10 @@ public class ServicioTuristicoServiceImpl implements ServicioTuristicoService {
         ServicioTuristico servicio = servicioRepository.findById(codigo)
                 .orElseThrow(() -> new ResourceNotFoundException("Servicio turístico no encontrado con código: " + codigo));
 
+        if (!Boolean.TRUE.equals(servicio.getActivo())) {
+            throw new BusinessException("No se puede modificar un servicio turístico inactivo. Debe reactivarlo previamente.");
+        }
+
         servicio.setNombre(requestDTO.getNombre());
         servicio.setDescripcionBreve(requestDTO.getDescripcionBreve());
         servicio.setDestinoServicio(requestDTO.getDestinoServicio());
@@ -104,6 +118,11 @@ public class ServicioTuristicoServiceImpl implements ServicioTuristicoService {
     public void eliminarServicio(Long codigo) {
         ServicioTuristico servicio = servicioRepository.findById(codigo)
                 .orElseThrow(() -> new ResourceNotFoundException("Servicio turístico no encontrado con código: " + codigo));
+
+        // Decisión 6: Bloqueo de baja lógica de un servicio si integra un paquete activo
+        if (paqueteRepository != null && paqueteRepository.existsPaqueteActivoConServicio(codigo)) {
+            throw new BusinessException("No se puede dar de baja el servicio porque forma parte de uno o más paquetes turísticos activos.");
+        }
 
         // Baja lógica
         servicio.setActivo(false);
