@@ -7,12 +7,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
 public interface VentaRepository extends JpaRepository<Venta, Long> {
 
     List<Venta> findByEstado(EstadoVenta estado);
+
+    List<Venta> findByEstadoAndFechaVentaBetween(EstadoVenta estado, LocalDateTime inicio, LocalDateTime fin);
 
     long countByPaquete_CodigoPaquete(Long codigoPaquete);
 
