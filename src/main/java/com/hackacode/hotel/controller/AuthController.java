@@ -7,6 +7,7 @@ import com.hackacode.hotel.model.Empleado;
 import com.hackacode.hotel.repository.EmpleadoRepository;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -23,13 +24,25 @@ import java.util.HexFormat;
 @CrossOrigin(origins = "*")
 public class AuthController {
 
-    private static final String HMAC_SECRET = "HackaCode2026SecretKeyForJwtSigning256Bits!";
-
     private final EmpleadoRepository empleadoRepository;
+    private final String jwtSecret;
 
     @Autowired
-    public AuthController(EmpleadoRepository empleadoRepository) {
+    public AuthController(
+            EmpleadoRepository empleadoRepository,
+            @Value("${security.jwt.secret:${JWT_SECRET:}}") String jwtSecret) {
         this.empleadoRepository = empleadoRepository;
+        if (jwtSecret == null || jwtSecret.trim().isEmpty()) {
+            throw new IllegalStateException("JWT Secret no configurado. Debe definirse la variable de entorno JWT_SECRET o la propiedad security.jwt.secret.");
+        }
+        if (jwtSecret.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalStateException("JWT Secret inseguro: la clave debe tener al menos 256 bits (32 caracteres).");
+        }
+        this.jwtSecret = jwtSecret;
+    }
+
+    public AuthController(EmpleadoRepository empleadoRepository) {
+        this(empleadoRepository, "HackaCode2026DefaultSecretKeyForTestingOnly256Bits!");
     }
 
     @PostMapping("/login")
@@ -99,7 +112,7 @@ public class AuthController {
             String data = headerB64 + "." + payloadB64;
 
             Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(HMAC_SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+            mac.init(new SecretKeySpec(jwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
             String signatureB64 = encoder.encodeToString(mac.doFinal(data.getBytes(StandardCharsets.UTF_8)));
 
             return data + "." + signatureB64;

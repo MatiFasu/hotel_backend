@@ -71,11 +71,12 @@ El backend estará disponible en `http://localhost:8080`.
    ```bash
    cd backend
    ```
-2. Configurar las variables de conexión a la base de datos en `src/main/resources/application.properties` o mediante variables de entorno:
+2. Configurar las variables de conexión a la base de datos y firma JWT creando un archivo `.env` o mediante variables de entorno:
    ```properties
    SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/agencia_turismo_db
    SPRING_DATASOURCE_USERNAME=agencia_user
-   SPRING_DATASOURCE_PASSWORD=agencia_password_secret
+   SPRING_DATASOURCE_PASSWORD=tu_contraseña_segura
+   JWT_SECRET=tu_secreto_jwt_de_al_menos_32_caracteres_aleatorios_aqui
    ```
    *(Si se utiliza Supabase con IPv4, conectar a través del Transaction/Session Pooler en puerto 5432 / 6543 con `sslmode=require`).*
 
@@ -89,6 +90,10 @@ El backend estará disponible en `http://localhost:8080`.
    ```
 
 ### Credenciales de Prueba (Perfil Demo)
+
+> [!WARNING]
+> **Aviso de Seguridad:** Las credenciales detalladas a continuación son exclusivas para pruebas locales y evaluación académica con el perfil `demo` activo (`SPRING_PROFILES_ACTIVE=demo`). En despliegues o entornos productivos (`prod`), el perfil demo debe permanecer inactivo y nunca deben utilizarse estas contraseñas por defecto.
+
 | Rol | Usuario (`username`) | Contraseña (`password`) | Permisos |
 |---|---|---|---|
 | **ADMIN** | `admin` | `Admin1234!` | Acceso total, visualización salarial y reportes |

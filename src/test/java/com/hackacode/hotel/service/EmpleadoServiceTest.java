@@ -50,7 +50,7 @@ class EmpleadoServiceTest {
                 "Ana", "Martinez", "Av. Libertador 500", "30111222",
                 LocalDate.of(1991, 8, 22), "Argentina", "1155667788", "ana@agencia.com",
                 "Ejecutiva de Ventas", new BigDecimal("850000.00"), "amartinez",
-                "Secret123!", RolEmpleado.VENDEDOR
+                "MockPassword123!", RolEmpleado.VENDEDOR
         );
     }
 

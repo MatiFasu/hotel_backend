@@ -66,12 +66,15 @@ public class DemoSeederService {
         );
 
         // 2. Empleados de demostración (ADMIN y VENDEDOR)
+        String adminPassword = System.getenv().getOrDefault("DEMO_ADMIN_PASSWORD", "Admin1234!");
+        String vendedorPassword = System.getenv().getOrDefault("DEMO_VENDEDOR_PASSWORD", "Vendedor1234!");
+
         Empleado eAdmin = empleadoRepository.findByDni("29111222").orElseGet(() ->
                 empleadoRepository.save(new Empleado(
                         null, "Valeria", "Gómez", "Av. Santa Fe 2100, CABA", "29111222",
                         LocalDate.of(1985, 4, 10), "Argentina", "+54 9 11 4444-1111", "valeria.admin@hackacode.com",
                         "Gerente General", new BigDecimal("1250000.00"), "admin",
-                        com.hackacode.hotel.controller.AuthController.hashSha256("Admin1234!"), RolEmpleado.ADMIN, true
+                        com.hackacode.hotel.controller.AuthController.hashSha256(adminPassword), RolEmpleado.ADMIN, true
                 ))
         );
         Empleado eVendedor = empleadoRepository.findByDni("33444555").orElseGet(() ->
@@ -79,7 +82,7 @@ public class DemoSeederService {
                         null, "Lucas", "Fernández", "Av. Cabildo 1500, CABA", "33444555",
                         LocalDate.of(1992, 8, 3), "Argentina", "+54 9 11 5555-2222", "lucas.ventas@hackacode.com",
                         "Asesor Comercial Senior", new BigDecimal("890000.00"), "vendedor",
-                        com.hackacode.hotel.controller.AuthController.hashSha256("Vendedor1234!"), RolEmpleado.VENDEDOR, true
+                        com.hackacode.hotel.controller.AuthController.hashSha256(vendedorPassword), RolEmpleado.VENDEDOR, true
                 ))
         );
 

@@ -5,6 +5,7 @@ import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 import java.net.Socket;
+import java.util.UUID;
 
 public abstract class AbstractIntegrationTest {
 
@@ -22,7 +23,7 @@ public abstract class AbstractIntegrationTest {
                 postgres = new PostgreSQLContainer<>("postgres:16-alpine")
                         .withDatabaseName("test_agencia_db")
                         .withUsername("test_user")
-                        .withPassword("test_pass");
+                        .withPassword(UUID.randomUUID().toString());
                 postgres.start();
                 System.out.println(">>> Contenedor Testcontainers PostgreSQL 16 iniciado exitosamente");
             } catch (Exception ex) {
@@ -38,14 +39,17 @@ public abstract class AbstractIntegrationTest {
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
         if (useLocalPostgres) {
+            String dbPass = System.getenv().getOrDefault("SPRING_DATASOURCE_PASSWORD",
+                    System.getenv().getOrDefault("DB_PASSWORD", ""));
             registry.add("spring.datasource.url", () -> "jdbc:postgresql://localhost:5432/agencia_turismo_db");
-            registry.add("spring.datasource.username", () -> "agencia_user");
-            registry.add("spring.datasource.password", () -> "agencia_password_secret");
+            registry.add("spring.datasource.username", () -> System.getenv().getOrDefault("SPRING_DATASOURCE_USERNAME", "agencia_user"));
+            registry.add("spring.datasource.password", () -> dbPass);
         } else if (postgres != null && postgres.isRunning()) {
             registry.add("spring.datasource.url", postgres::getJdbcUrl);
             registry.add("spring.datasource.username", postgres::getUsername);
             registry.add("spring.datasource.password", postgres::getPassword);
         }
+        registry.add("security.jwt.secret", () -> "TestJwtSecretKeyForAutomatedTestingOnlyLongerThan256Bits!");
         registry.add("spring.flyway.enabled", () -> "true");
         registry.add("spring.jpa.hibernate.ddl-auto", () -> "validate");
     }
