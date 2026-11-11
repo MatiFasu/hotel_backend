@@ -3,6 +3,7 @@ package com.hackacode.hotel.config;
 import com.hackacode.hotel.model.*;
 import com.hackacode.hotel.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -10,6 +11,7 @@ import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 
@@ -22,6 +24,7 @@ public class DemoSeederService {
     private final PaqueteTuristicoRepository paqueteRepository;
     private final VentaRepository ventaRepository;
     private final Clock clock;
+    private final Environment environment;
 
     @Autowired
     public DemoSeederService(
@@ -30,17 +33,26 @@ public class DemoSeederService {
             ServicioTuristicoRepository servicioRepository,
             PaqueteTuristicoRepository paqueteRepository,
             VentaRepository ventaRepository,
-            Clock clock) {
+            Clock clock,
+            Environment environment) {
         this.clienteRepository = clienteRepository;
         this.empleadoRepository = empleadoRepository;
         this.servicioRepository = servicioRepository;
         this.paqueteRepository = paqueteRepository;
         this.ventaRepository = ventaRepository;
         this.clock = clock;
+        this.environment = environment;
     }
 
     @Transactional
     public Map<String, Object> cargarDatosDemoSiVacio() {
+        if (Arrays.asList(environment.getActiveProfiles()).contains("prod")) {
+            return Map.of(
+                    "seeded", false,
+                    "message", "Operación bloqueada por seguridad: la carga de datos demo está prohibida en el perfil 'prod'."
+            );
+        }
+
         if (!ventaRepository.findByEstado(EstadoVenta.ACTIVA).isEmpty()) {
             return Map.of(
                     "seeded", false,

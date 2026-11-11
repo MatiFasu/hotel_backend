@@ -41,10 +41,6 @@ public class AuthController {
         this.jwtSecret = jwtSecret;
     }
 
-    public AuthController(EmpleadoRepository empleadoRepository) {
-        this(empleadoRepository, "HackaCode2026DefaultSecretKeyForTestingOnly256Bits!");
-    }
-
     @PostMapping("/login")
     public ResponseEntity<LoginResponseDTO> login(@Valid @RequestBody LoginRequestDTO requestDTO) {
         Empleado empleado = empleadoRepository.findByUsername(requestDTO.getUsername())
@@ -57,10 +53,9 @@ public class AuthController {
         String hashIngresado = hashSha256(requestDTO.getPassword());
         String storedHash = empleado.getPasswordHash();
 
-        boolean passwordValida = storedHash != null && (
-                storedHash.equals(hashIngresado)
-                || storedHash.equals("$sha256$" + requestDTO.getPassword())
-                || storedHash.equals(requestDTO.getPassword())
+        boolean passwordValida = storedHash != null && MessageDigest.isEqual(
+                storedHash.getBytes(StandardCharsets.UTF_8),
+                hashIngresado.getBytes(StandardCharsets.UTF_8)
         );
 
         if (!passwordValida) {
