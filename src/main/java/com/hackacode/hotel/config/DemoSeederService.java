@@ -2,6 +2,7 @@ package com.hackacode.hotel.config;
 
 import com.hackacode.hotel.model.*;
 import com.hackacode.hotel.repository.*;
+import com.hackacode.hotel.security.PasswordHasher;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.env.Environment;
 import org.springframework.stereotype.Service;
@@ -25,6 +26,7 @@ public class DemoSeederService {
     private final VentaRepository ventaRepository;
     private final Clock clock;
     private final Environment environment;
+    private final PasswordHasher passwordHasher;
 
     @Autowired
     public DemoSeederService(
@@ -34,7 +36,8 @@ public class DemoSeederService {
             PaqueteTuristicoRepository paqueteRepository,
             VentaRepository ventaRepository,
             Clock clock,
-            Environment environment) {
+            Environment environment,
+            PasswordHasher passwordHasher) {
         this.clienteRepository = clienteRepository;
         this.empleadoRepository = empleadoRepository;
         this.servicioRepository = servicioRepository;
@@ -42,6 +45,7 @@ public class DemoSeederService {
         this.ventaRepository = ventaRepository;
         this.clock = clock;
         this.environment = environment;
+        this.passwordHasher = passwordHasher;
     }
 
     @Transactional
@@ -86,7 +90,7 @@ public class DemoSeederService {
                         null, "Valeria", "Gómez", "Av. Santa Fe 2100, CABA", "29111222",
                         LocalDate.of(1985, 4, 10), "Argentina", "+54 9 11 4444-1111", "valeria.admin@hackacode.com",
                         "Gerente General", new BigDecimal("1250000.00"), "admin",
-                        com.hackacode.hotel.controller.AuthController.hashSha256(adminPassword), RolEmpleado.ADMIN, true
+                        passwordHasher.encode(adminPassword), RolEmpleado.ADMIN, true
                 ))
         );
         Empleado eVendedor = empleadoRepository.findByDni("33444555").orElseGet(() ->
@@ -94,7 +98,7 @@ public class DemoSeederService {
                         null, "Lucas", "Fernández", "Av. Cabildo 1500, CABA", "33444555",
                         LocalDate.of(1992, 8, 3), "Argentina", "+54 9 11 5555-2222", "lucas.ventas@hackacode.com",
                         "Asesor Comercial Senior", new BigDecimal("890000.00"), "vendedor",
-                        com.hackacode.hotel.controller.AuthController.hashSha256(vendedorPassword), RolEmpleado.VENDEDOR, true
+                        passwordHasher.encode(vendedorPassword), RolEmpleado.VENDEDOR, true
                 ))
         );
 

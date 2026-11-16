@@ -5,40 +5,36 @@ import com.hackacode.hotel.dto.LoginResponseDTO;
 import com.hackacode.hotel.exception.UnauthorizedException;
 import com.hackacode.hotel.model.Empleado;
 import com.hackacode.hotel.repository.EmpleadoRepository;
+import com.hackacode.hotel.security.JwtService;
+import com.hackacode.hotel.security.PasswordHasher;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.time.Instant;
-import java.util.Base64;
-import java.util.HexFormat;
-
+/**
+ * Controlador de autenticación para la emisión de tokens JWT.
+ * Realiza la validación de credenciales con BCrypt y migración transparente de hashes legacy SHA-256.
+ */
 @RestController
 @RequestMapping("/api/auth")
-@CrossOrigin(origins = "*")
 public class AuthController {
 
     private final EmpleadoRepository empleadoRepository;
-    private final String jwtSecret;
+    private final PasswordHasher passwordHasher;
+    private final JwtService jwtService;
 
     @Autowired
     public AuthController(
             EmpleadoRepository empleadoRepository,
-            @Value("${security.jwt.secret:${JWT_SECRET:}}") String jwtSecret) {
+            PasswordHasher passwordHasher,
+            JwtService jwtService) {
         this.empleadoRepository = empleadoRepository;
-        if (jwtSecret == null || jwtSecret.trim().isEmpty()) {
-            throw new IllegalStateException("JWT Secret no configurado. Debe definirse la variable de entorno JWT_SECRET o la propiedad security.jwt.secret.");
-        }
-        if (jwtSecret.getBytes(StandardCharsets.UTF_8).length < 32) {
-            throw new IllegalStateException("JWT Secret inseguro: la clave debe tener al menos 256 bits (32 caracteres).");
-        }
-        this.jwtSecret = jwtSecret;
+        this.passwordHasher = passwordHasher;
+        this.jwtService = jwtService;
     }
 
     @PostMapping("/login")
@@ -50,19 +46,24 @@ public class AuthController {
             throw new UnauthorizedException("La cuenta del empleado se encuentra dada de baja (inactiva).");
         }
 
-        String hashIngresado = hashSha256(requestDTO.getPassword());
+        String rawPassword = requestDTO.getPassword();
         String storedHash = empleado.getPasswordHash();
 
-        boolean passwordValida = storedHash != null && MessageDigest.isEqual(
-                storedHash.getBytes(StandardCharsets.UTF_8),
-                hashIngresado.getBytes(StandardCharsets.UTF_8)
-        );
+        boolean passwordValida = passwordHasher.matches(rawPassword, storedHash);
+
+        // Migración transparente: si coincide con hash legacy SHA-256, se re-hashea con BCrypt y se persiste
+        if (!passwordValida && passwordHasher.isLegacySha256(storedHash)
+                && passwordHasher.matchesLegacySha256(rawPassword, storedHash)) {
+            passwordValida = true;
+            empleado.setPasswordHash(passwordHasher.encode(rawPassword));
+            empleadoRepository.save(empleado);
+        }
 
         if (!passwordValida) {
             throw new UnauthorizedException("Credenciales inválidas: usuario o contraseña incorrectos.");
         }
 
-        String token = generarJwtToken(empleado);
+        String token = jwtService.generarToken(empleado);
         String nombreCompleto = empleado.getNombre() + " " + empleado.getApellido();
 
         LoginResponseDTO response = new LoginResponseDTO(
@@ -75,44 +76,5 @@ public class AuthController {
         );
 
         return ResponseEntity.ok(response);
-    }
-
-    public static String hashSha256(String rawPassword) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] encoded = digest.digest(rawPassword.getBytes(StandardCharsets.UTF_8));
-            return "$sha256$" + HexFormat.of().formatHex(encoded);
-        } catch (Exception e) {
-            throw new IllegalStateException("Error calculando hash SHA-256", e);
-        }
-    }
-
-    private String generarJwtToken(Empleado empleado) {
-        try {
-            String headerJson = "{\"alg\":\"HS256\",\"typ\":\"JWT\"}";
-            long iat = Instant.now().getEpochSecond();
-            long exp = iat + (8 * 3600);
-            String payloadJson = String.format(
-                    "{\"sub\":\"%s\",\"empleadoId\":%d,\"rol\":\"%s\",\"iat\":%d,\"exp\":%d}",
-                    empleado.getUsername(),
-                    empleado.getIdEmpleado(),
-                    empleado.getRol().name(),
-                    iat,
-                    exp
-            );
-
-            Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
-            String headerB64 = encoder.encodeToString(headerJson.getBytes(StandardCharsets.UTF_8));
-            String payloadB64 = encoder.encodeToString(payloadJson.getBytes(StandardCharsets.UTF_8));
-            String data = headerB64 + "." + payloadB64;
-
-            Mac mac = Mac.getInstance("HmacSHA256");
-            mac.init(new SecretKeySpec(jwtSecret.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
-            String signatureB64 = encoder.encodeToString(mac.doFinal(data.getBytes(StandardCharsets.UTF_8)));
-
-            return data + "." + signatureB64;
-        } catch (Exception e) {
-            throw new IllegalStateException("No se pudo generar el token JWT", e);
-        }
     }
 }

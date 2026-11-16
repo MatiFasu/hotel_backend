@@ -8,16 +8,13 @@ import com.hackacode.hotel.exception.ResourceNotFoundException;
 import com.hackacode.hotel.model.Empleado;
 import com.hackacode.hotel.model.RolEmpleado;
 import com.hackacode.hotel.repository.EmpleadoRepository;
+import com.hackacode.hotel.security.PasswordHasher;
 import com.hackacode.hotel.service.EmpleadoService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
-import java.util.HexFormat;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -27,10 +24,12 @@ import java.util.stream.Collectors;
 public class EmpleadoServiceImpl implements EmpleadoService {
 
     private final EmpleadoRepository empleadoRepository;
+    private final PasswordHasher passwordHasher;
 
     @Autowired
-    public EmpleadoServiceImpl(EmpleadoRepository empleadoRepository) {
+    public EmpleadoServiceImpl(EmpleadoRepository empleadoRepository, PasswordHasher passwordHasher) {
         this.empleadoRepository = empleadoRepository;
+        this.passwordHasher = passwordHasher;
     }
 
     @Override
@@ -227,12 +226,6 @@ public class EmpleadoServiceImpl implements EmpleadoService {
     }
 
     private String hashPassword(String rawPassword) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] encoded = digest.digest(rawPassword.getBytes(StandardCharsets.UTF_8));
-            return "$sha256$" + HexFormat.of().formatHex(encoded);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("No se pudo inicializar el algoritmo de hash", e);
-        }
+        return passwordHasher.encode(rawPassword);
     }
 }

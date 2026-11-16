@@ -13,7 +13,6 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/paquetes")
-@CrossOrigin(origins = "*")
 public class PaqueteTuristicoController {
 
     private final PaqueteTuristicoService paqueteService;

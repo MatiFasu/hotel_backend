@@ -7,6 +7,7 @@ import com.hackacode.hotel.exception.DuplicateResourceException;
 import com.hackacode.hotel.model.Empleado;
 import com.hackacode.hotel.model.RolEmpleado;
 import com.hackacode.hotel.repository.EmpleadoRepository;
+import com.hackacode.hotel.security.PasswordHasher;
 import com.hackacode.hotel.service.impl.EmpleadoServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -31,6 +32,9 @@ class EmpleadoServiceTest {
     @Mock
     private EmpleadoRepository empleadoRepository;
 
+    @Mock
+    private PasswordHasher passwordHasher;
+
     @InjectMocks
     private EmpleadoServiceImpl empleadoService;
 
@@ -52,6 +56,8 @@ class EmpleadoServiceTest {
                 "Ejecutiva de Ventas", new BigDecimal("850000.00"), "amartinez",
                 "MockPassword123!", RolEmpleado.VENDEDOR
         );
+
+        lenient().when(passwordHasher.encode(any())).thenReturn("$2a$12$mockedhash");
     }
 
     @Test

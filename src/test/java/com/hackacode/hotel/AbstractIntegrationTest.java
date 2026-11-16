@@ -40,7 +40,7 @@ public abstract class AbstractIntegrationTest {
     static void configureProperties(DynamicPropertyRegistry registry) {
         if (useLocalPostgres) {
             String dbPass = System.getenv().getOrDefault("SPRING_DATASOURCE_PASSWORD",
-                    System.getenv().getOrDefault("DB_PASSWORD", ""));
+                    System.getenv().getOrDefault("DB_PASSWORD", "Granturismo,5"));
             registry.add("spring.datasource.url", () -> "jdbc:postgresql://localhost:5432/agencia_turismo_db");
             registry.add("spring.datasource.username", () -> System.getenv().getOrDefault("SPRING_DATASOURCE_USERNAME", "agencia_user"));
             registry.add("spring.datasource.password", () -> dbPass);
